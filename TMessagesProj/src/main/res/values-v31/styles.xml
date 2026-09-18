@@ -86,6 +86,27 @@
         <item name="android:forceDarkAllowed">false</item>
     </style>
 
+    <!-- MATERIAL YOU (dynamic color) theme -->
+    <style name="Theme.TMessages.Material3" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#527da3</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#52627a</item>
+        <item name="colorOnPrimaryContainer">#ffffff</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
+    </style>
+
+    <style name="Theme.TMessages.Material3.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#38AEEB</item>
+        <item name="colorOnPrimary">#00344a</item>
+        <item name="colorPrimaryContainer">#1a4c66</item>
+        <item name="colorOnPrimaryContainer">#cbe6ff</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
+    </style>
+
     <!-- APP WIDGET -->
 
     <style name="Base.Theme.TMessages.AppWidget" parent="android:Theme.DeviceDefault.DayNight" />

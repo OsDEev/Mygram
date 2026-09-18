@@ -427,7 +427,33 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
         }
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setTheme(R.style.Theme_TMessages);
+        if (org.telegram.messenger.MYgramConfig.isOledBlack()) {
+            Theme.ThemeInfo mygramNight = Theme.getCurrentNightTheme();
+            if (mygramNight != null && !Theme.isCurrentThemeDark() && mygramNight.isDark()) {
+                Theme.applyTheme(mygramNight, false, true);
+            }
+        }
+        int materialYouLevel = org.telegram.messenger.MYgramConfig.getMaterialYouLevel();
+        boolean isDark = Theme.isCurrentThemeDark() || org.telegram.messenger.MYgramConfig.isOledBlack();
+        if (materialYouLevel >= 3 && Build.VERSION.SDK_INT >= 31) {
+            setTheme(isDark ? R.style.Theme_TMessages_Material3_Dark : R.style.Theme_TMessages_Material3);
+        } else if (materialYouLevel >= 1) {
+            setTheme(isDark ? R.style.Theme_TMessages_Material_Dark : R.style.Theme_TMessages_Material);
+        } else {
+            setTheme(R.style.Theme_TMessages);
+        }
+        if (org.telegram.messenger.MYgramConfig.isOledBlack()) {
+            Theme.setColor(Theme.key_windowBackgroundGray, 0xff000000, false);
+            Theme.setColor(Theme.key_windowBackgroundWhite, 0xff000000, false);
+            Theme.setColor(Theme.key_windowBackgroundGrayShadow, 0xff000000, false);
+            Theme.setColor(Theme.key_chat_wallpaper, 0xff000000, false);
+            Theme.setColor(Theme.key_actionBarDefault, 0xff000000, false);
+            Theme.setColor(Theme.key_actionBarDefaultArchived, 0xff000000, false);
+            Theme.setColor(Theme.key_chat_messagePanelBackground, 0xff000000, false);
+            Theme.setColor(Theme.key_chat_inBubble, 0xff000000, false);
+            Theme.setColor(Theme.key_chat_outBubble, 0xff000000, false);
+            Theme.setColor(Theme.key_chat_serviceBackground, 0xff000000, false);
+        }
         try {
             setTaskDescription(new ActivityManager.TaskDescription(null, null, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000));
         } catch (Throwable ignore) {
@@ -1507,6 +1533,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             return true;
         }
         if (UserSelectorBottomSheet.handleIntent(intent, progress)) {
+            return true;
+        }
+        if (handlePluginInstallIntent(intent)) {
             return true;
         }
         if (AndroidUtilities.handleProxyIntent(this, intent, true)) {
@@ -6126,6 +6155,79 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public void onNewIntent(Intent intent, Browser.Progress progress) {
         super.onNewIntent(intent);
         handleIntent(intent, true, false, false, progress, true, false);
+    }
+
+    private boolean handlePluginInstallIntent(Intent intent) {
+        if (intent == null || intent.getAction() == null || !Intent.ACTION_VIEW.equals(intent.getAction())) {
+            return false;
+        }
+        Uri uri = intent.getData();
+        if (uri == null) {
+            return false;
+        }
+        String scheme = uri.getScheme();
+        if (scheme != null && scheme.equals("mygram")) {
+            String uriParam = uri.getQueryParameter("uri");
+            if (uriParam != null) {
+                try {
+                    showPluginInstallDialog(Uri.parse(uriParam), uri.getQueryParameter("name"));
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+            if (uri.getPath() != null && uri.getPath().endsWith("plugins")) {
+                presentFragment(new PluginsActivity());
+                return true;
+            }
+            return true;
+        }
+        String path = uri.getPath();
+        String name = uri.getLastPathSegment();
+        String mime = intent.getType();
+        boolean isPluginFile = path != null && (path.toLowerCase().endsWith(".myp") || path.toLowerCase().endsWith(".zip"));
+        if (isPluginFile || "application/zip".equals(mime) || "application/octet-stream".equals(mime)) {
+            showPluginInstallDialog(uri, name);
+            return true;
+        }
+        return false;
+    }
+
+    private void showPluginInstallDialog(final Uri uri, final String displayName) {
+        String name = displayName;
+        if (name == null || name.isEmpty()) {
+            name = LocaleController.getString(R.string.MYgramPlugins);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(LocaleController.getString(R.string.MYgramPlugins));
+        builder.setMessage(LocaleController.formatString(R.string.MYgramInstallPluginPrompt, name));
+        builder.setPositiveButton(LocaleController.getString(R.string.MYgramInstallYes), (dialog, which) -> {
+            new Thread(() -> {
+                final boolean ok = installPluginFromUri(uri);
+                AndroidUtilities.runOnUIThread(() -> {
+                    String message = ok
+                            ? LocaleController.getString(R.string.MYgramPluginInstalled)
+                            : LocaleController.getString(R.string.MYgramPluginInstallFailed);
+                    Toast.makeText(LaunchActivity.this, message, Toast.LENGTH_SHORT).show();
+                });
+            }, "PluginInstaller").start();
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        builder.show();
+    }
+
+    private boolean installPluginFromUri(Uri uri) {
+        try {
+            java.io.InputStream is = getContentResolver().openInputStream(uri);
+            if (is == null) {
+                return false;
+            }
+            boolean ok = org.telegram.messenger.plugins.PluginManager.getInstance().installPluginFromStream(is, uri.getLastPathSegment());
+            is.close();
+            return ok;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return false;
+        }
     }
 
     @Override

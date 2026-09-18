@@ -1021,6 +1021,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private float currentMusicPlaybackSpeed = 1.0f;
     private float fastPlaybackSpeed = 1.0f;
     private float fastMusicPlaybackSpeed = 1.0f;
+    private long silenceSkipStart = -1;
+    private float silenceSkipMaxEnergy;
+    private float silenceSkipSmoothEnergy = -1;
     private float seekToProgressPending;
     private long lastProgress = 0;
     private MessageObject playingMessageObject;
@@ -2455,6 +2458,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (stopService && restoreMusicPlaylistState()) {
             return;
         }
+        silenceSkipStart = -2;
+        silenceSkipMaxEnergy = 0;
+        silenceSkipSmoothEnergy = -1;
 
         if (audioPlayer != null) {
             if (reporter != null) {
@@ -3907,14 +3913,44 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 audioPlayer.setAudioVisualizerDelegate(new VideoPlayer.AudioVisualizerDelegate() {
                     @Override
                     public void onVisualizerUpdate(boolean playing, boolean animate, float[] values) {
+                        if (silenceSkipStart != -2 && playing && org.telegram.messenger.MYgramConfig.isSkipSilence() && playingMessageObject != null && playingMessageObject.isVoice() && values != null && values.length > 0 && audioPlayer != null) {
+                            float energy = 0;
+                            for (float v : values) {
+                                energy += v * v;
+                            }
+                            energy = (float) Math.sqrt(energy / values.length);
+                            if (silenceSkipSmoothEnergy < 0) {
+                                silenceSkipSmoothEnergy = energy;
+                            } else {
+                                silenceSkipSmoothEnergy = silenceSkipSmoothEnergy * 0.9f + energy * 0.1f;
+                            }
+                            silenceSkipMaxEnergy = Math.max(silenceSkipMaxEnergy, silenceSkipSmoothEnergy);
+                            boolean silent = silenceSkipMaxEnergy > 1.0f && silenceSkipSmoothEnergy < silenceSkipMaxEnergy * 0.03f;
+                            if (silent) {
+                                if (silenceSkipStart == -1) {
+                                    silenceSkipStart = SystemClock.elapsedRealtime();
+                                }
+                            } else {
+                                if (silenceSkipStart != -1) {
+                                    long silenceDuration = SystemClock.elapsedRealtime() - silenceSkipStart;
+                                    if (silenceDuration > 400) {
+                                        audioPlayer.seekTo((int) (audioPlayer.getCurrentPosition() + silenceDuration));
+                                    }
+                                    silenceSkipStart = -1;
+                                }
+                            }
+                        }
                         Theme.getCurrentAudiVisualizerDrawable().setWaveform(playing, animate, values);
                     }
 
                     @Override
                     public boolean needUpdate() {
-                        return Theme.getCurrentAudiVisualizerDrawable().getParentView() != null;
+                        return Theme.getCurrentAudiVisualizerDrawable().getParentView() != null || silenceSkipStart != -2;
                     }
                 });
+                silenceSkipStart = -1;
+                silenceSkipMaxEnergy = 0;
+                silenceSkipSmoothEnergy = -1;
                 if (exists) {
                     if (!messageObject.mediaExists && cacheFile != file) {
                         AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.fileLoaded, FileLoader.getAttachFileName(messageObject.getDocument()), cacheFile));

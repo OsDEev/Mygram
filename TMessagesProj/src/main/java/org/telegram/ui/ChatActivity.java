@@ -3182,6 +3182,8 @@ public class ChatActivity extends BaseFragment implements
             getMessagesController().getSavedMessagesController().checkSavedDialogCount(getTopicId());
         }
 
+        org.telegram.messenger.plugins.PluginManager.getInstance().triggerChatOpen(dialog_id);
+
         return true;
     }
 
@@ -21940,7 +21942,27 @@ public class ChatActivity extends BaseFragment implements
                 updateSubtitle = !isThreadChat();
                 updateBottomOverlay();
                 if (chatActivityEnterView != null) {
-                    chatActivityEnterView.setDialogId(dialog_id, currentAccount);
+chatActivityEnterView.setDialogId(dialog_id, currentAccount);
+        if (org.telegram.messenger.MYgramConfig.isPluginsEnabled()) {
+            final Runnable[] inputDebounce = new Runnable[1];
+            chatActivityEnterView.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(android.text.Editable s) {
+                    if (inputDebounce[0] != null) {
+                        AndroidUtilities.cancelRunOnUIThread(inputDebounce[0]);
+                    }
+                    final String text = s != null ? s.toString() : "";
+                    inputDebounce[0] = () -> org.telegram.messenger.plugins.PluginManager.getInstance().triggerInputChanged(text, dialog_id);
+                    AndroidUtilities.runOnUIThread(inputDebounce[0], 350);
+                }
+            });
+        }
                 }
                 if (flagSecure != null) {
                     flagSecure.invalidate();
@@ -21973,6 +21995,21 @@ public class ChatActivity extends BaseFragment implements
                     return;
                 }
                 processNewMessages(arr);
+                for (int a = 0, N = arr.size(); a < N; a++) {
+                    MessageObject messageObject = arr.get(a);
+                    if (!messageObject.isOut() && messageObject.messageOwner != null && messageObject.messageText != null) {
+                        if (org.telegram.messenger.MYgramConfig.isUrlSanitizer()) {
+                            String cleaned = org.telegram.messenger.UrlSanitizer.sanitizeText(messageObject.messageText.toString());
+                            if (cleaned != null && !cleaned.equals(messageObject.messageText.toString())) {
+                                messageObject.messageText = cleaned;
+                            }
+                        }
+                        String pluginMutated = org.telegram.messenger.plugins.PluginManager.getInstance().triggerMessageReceived(messageObject.messageText.toString(), dialog_id);
+                        if (pluginMutated != null && !pluginMutated.equals(messageObject.messageText.toString())) {
+                            messageObject.messageText = pluginMutated;
+                        }
+                    }
+                }
             } else if (ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && did == -chatInfo.linked_chat_id) {
                 for (int a = 0, N = arr.size(); a < N; a++) {
                     MessageObject messageObject = arr.get(a);
@@ -41563,6 +41600,10 @@ public class ChatActivity extends BaseFragment implements
                     presentFragment(fragment);
                 }
             } else if (message.type == MessageObject.TYPE_FILE || message.type == MessageObject.TYPE_TEXT) {
+                if (message.getDocumentName().toLowerCase().endsWith(".myp")) {
+                    org.telegram.messenger.plugins.PluginInstaller.requestInstall(message, ChatActivity.this, getParentActivity());
+                    return;
+                }
                 if (message.getDocumentName().toLowerCase().endsWith("attheme")) {
                     File locFile = null;
                     if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {

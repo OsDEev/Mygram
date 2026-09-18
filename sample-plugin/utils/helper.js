@@ -1,0 +1,1 @@
+function log(msg) { __hookResult__ && (__hookResult__.debug = msg); }

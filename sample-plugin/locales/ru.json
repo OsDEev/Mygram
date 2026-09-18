@@ -1,0 +1,10 @@
+{
+  "ru": {
+    "name": "Мой плагин",
+    "description": "Пример плагина MYgram, демонстрирующий систему хуков"
+  },
+  "en": {
+    "name": "My Plugin",
+    "description": "Example MYgram plugin demonstrating the hook system"
+  }
+}

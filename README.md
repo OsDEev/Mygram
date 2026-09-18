@@ -1,46 +1,100 @@
-## Telegram messenger for Android
+# MYgram
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+Форк [Telegram for Android](https://github.com/DrKLO/Telegram) с собственной системой плагинов, кастомными настройками и пасхалками.
 
-## Creating your Telegram Application
+MYgram — это мессенджер на базе кода Telegram со встроенным плагин-движком: плагины (`.myp`) можно ставить из диалогового окна «MYgram Plugins» и расширять клиент без пересборки — обрабатывать сообщения, показывать собственные окна поверх интерфейса, обращаться к сети и хранить состояние.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+> ⚠️ Это неофициальный форк. Не используйте название и логотип Telegram как свои.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+## Возможности
 
-### API, Protocol documentation
+- **Плагины (`.myp`)** — JS-движок (QuickJS через JNI) + песочница хуков и прав
+- **MYgram Settings** — кастомные настройки клиента (вкладка в главных настройках)
+- Плавающие UI-панели плагинов поверх всего приложения (`m.ui`)
+- Пасхалка в стиле Android (7 тапов по «MyGram Ver»)
+- Брендинг MYgram: имя, иконки, версия (`MYGRAM_VERSION_STRING`)
 
-Telegram API manuals: https://core.telegram.org/api
+## Сборка
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+Требуется Android Studio 2025.1.4, Android NDK 27.2.12479018 и Android SDK 36.
 
-### Compilation Guide
-
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
-
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
-
-1. Clone the Telegram source code with its submodules:
+1. Склонируйте репозиторий с подмодулями:
    ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
+   git clone --recursive --shallow-submodules https://github.com/OsDEev/Mygram.git
    ```
-   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
-   ```bash
-   git submodule init && git submodule update --init --recursive --depth=1
-   ```
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+2. Замените `release.keystore` в `TMessagesProj/config` (пароли — в `gradle.properties`).
+3. Создайте приложения `org.telegram.messenger` и `org.telegram.messenger.beta` в Firebase и положите `google-services.json` рядом с `TMessagesProj`.
+4. Заполните API-ключи в `TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java`.
+5. Откройте проект в Android Studio «Open», соберите `TMessagesProj` (debug).
 
-### Localization
+Gradle/JDK: в `gradle.properties` включён `org.gradle.java.installations.auto-download=false`, задание JDK — через `JAVA_HOME`.
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+## Плагины
+
+Плагин — это ZIP-архив с расширением `.myp`:
+
+```
+my_plugin.myp
+├── manifest.json       # обязательно (id, name, permissions, entry)
+├── index.js            # entry (по умолчанию index.js)
+├── helper.js           # загружается до entry (общие функции)
+├── utils/*.js          # загружаются по алфавиту (утилиты)
+└── locales/ru.json     # локализации
+```
+
+### manifest.json
+
+```json
+{
+  "id": "com.example.my_plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "author": "You",
+  "entry": "index.js",
+  "permissions": ["MODIFY_OUTGOING_MESSAGES", "READ_MESSAGES", "LIFECYCLE", "NETWORK", "UI"]
+}
+```
+
+Допустимые разрешения: `MODIFY_OUTGOING_MESSAGES`, `READ_MESSAGES`, `LIFECYCLE`, `NETWORK`, `STORAGE`, `UI`.
+Права выдаются на время работы плагина и снимаются при его отключении/удалении.
+
+### JS API
+
+Контекст плагина (`m`):
+
+- `m.log(msg)` / `m.warn(msg)` / `m.error(msg)` — логирование
+- `m.notify(title, text)` — системное уведомление (Toast)
+- `m.httpGet(url, callback(status, text))` — GET-запрос (нужно `NETWORK`)
+- `m.getState()` / `m.setState(obj)` — персистентное состояние
+- `m.ui.open({title, html, width, height, x, y, visible})` → `id` панели (нужно `UI`)
+- `m.ui.update(id, options)` / `m.ui.close(id)`
+- Вспомогательные: `allow()`, `block(message)`, `mutate(text)` и `getData()` (данные текущего хука)
+
+### Хуки
+
+Эти функции вызываются из клиента (если имя существует и есть нужное право):
+
+| Хук | Событие | Право |
+| --- | --- | --- |
+| `onStartup` | запуск клиента | `LIFECYCLE` |
+| `onSettingsOpen` | открыты настройки | `LIFECYCLE` |
+| `onChatOpen` | открыт диалог `{chatId}` | `LIFECYCLE` |
+| `onInputChanged` | ввод текста `{text, chatId}` | `READ_MESSAGES` |
+| `onSendMessage` | отправка сообщения `{text, chatId}` | `MODIFY_OUTGOING_MESSAGES` |
+| `onOutgoingPrepared` | подготовка исходящего | `MODIFY_OUTGOING_MESSAGES` |
+| `onReceiveMessage` | входящее сообщение `{text, chatId}` | `READ_MESSAGES` |
+
+Синхронные хуки могут вернуть `{action: "block", message}` или `{action: "mutate", text}` (либо использовать `block()`/`mutate()`).
+
+### Пример
+
+Готовый демо-плагин лежит в [`samples/mygram_test`](samples/mygram_test) (`mygram_test.myp`). Базовые примеры: [`sample-plugin`](sample-plugin), [`test-plugin`](test-plugin). Команды демо в тексте сообщения:
+
+- `#test` — добавить `[+MYgram test]` к исходящему
+- `#upper` — отправить ВЕРХНИМ регистром
+- `#block` — заблокировать сообщение
+- `#mark` — пометить входящее `[Y]`
+
+## Лицензии
+
+Код основан на [Telegram for Android](https://github.com/DrKLO/Telegram) (GPLv2). Плагин-движок MYgram распространяется в рамках исходного кода репозитория.

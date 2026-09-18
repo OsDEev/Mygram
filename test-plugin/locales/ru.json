@@ -1,0 +1,10 @@
+{
+  "ru": {
+    "name": "Тестовый плагин со всеми разрешениями",
+    "description": "Тестовый плагин, который запрашивает все разрешения MYgram и проверяет каждый хук"
+  },
+  "en": {
+    "name": "Test All Permissions",
+    "description": "Test plugin that requests every MYgram permission and exercises every hook"
+  }
+}

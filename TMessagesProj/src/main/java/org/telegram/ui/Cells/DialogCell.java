@@ -803,6 +803,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     private boolean isOnline() {
+        if (!org.telegram.messenger.MYgramConfig.isShowOnlineStatus()) {
+            return false;
+        }
         if (isForumCell()) {
             return false;
         }
@@ -1320,6 +1323,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             message.updateTranslation();
         }
         CharSequence msgText = message != null ? message.messageText : null;
+        if (msgText != null && org.telegram.messenger.MYgramConfig.isBlurChatList()) {
+            msgText = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+        }
         if (msgText instanceof Spannable) {
             Spannable sp = new SpannableStringBuilder(msgText);
             for (Object span : sp.getSpans(0, sp.length(), URLSpanNoUnderlineBold.class))

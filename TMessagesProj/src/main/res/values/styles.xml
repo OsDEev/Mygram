@@ -71,6 +71,27 @@
         <item name="android:windowActionBar">false</item>
     </style>
 
+    <!--MATERIAL THEMES (Material You support)-->
+    <style name="Theme.TMessages.Material" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#527da3</item>
+        <item name="colorPrimaryDark">#426482</item>
+        <item name="colorAccent">#527da3</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:colorBackground">@android:color/white</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
+    </style>
+
+    <style name="Theme.TMessages.Material.Dark" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">#527da3</item>
+        <item name="colorPrimaryDark">#33000000</item>
+        <item name="colorAccent">#527da3</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
+    </style>
+
     <style name="scrollbarShapeStyle">
         <item name="android:scrollbarAlwaysDrawVerticalTrack">true</item>
         <item name="android:scrollbarStyle">insideInset</item>

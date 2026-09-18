@@ -1,0 +1,9 @@
+{
+  "id": "mygram_demo",
+  "name": "MYgram Demo",
+  "description": "Test plugin: floating m.ui panel, magic commands in messages (#test, #upper, #block, #mark), http, state, notifications.",
+  "version": "1.0.0",
+  "author": "MYgram team",
+  "entry": "index.js",
+  "permissions": ["LIFECYCLE", "READ_MESSAGES", "MODIFY_OUTGOING_MESSAGES", "NETWORK", "UI"]
+}

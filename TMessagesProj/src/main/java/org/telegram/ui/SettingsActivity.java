@@ -700,6 +700,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         items.add(UItem.asShadow(null));
 
+        items.add(UItem.asHeader("MYgram"));
+        items.add(SettingCell.Factory.of(30, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_mygram, getString(R.string.MYgramSettings)));
+        items.add(SettingCell.Factory.of(31, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_plugins, getString(R.string.MYgramPlugins)));
+
+        items.add(UItem.asShadow(null));
+
         if (!getMessagesController().premiumFeaturesBlocked()) {
             items.add(SettingCell.Factory.of(11, 0xFFB659FF, 0xFF617CFF, R.drawable.settings_premium, getString(R.string.TelegramPremium)));
         }
@@ -835,6 +841,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 10:
                 presentSettingFragment(new LanguageSelectActivity());
+                break;
+
+            case 30:
+                presentSettingFragment(new MYgramSettingsActivity());
+                break;
+            case 31:
+                presentSettingFragment(new PluginsActivity());
                 break;
 
             case 11:

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -DANDROID -g")
-set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g -Wno-error=implicit-function-declaration")
+set(CMAKE_C_FLAGS "-w -std=gnu11 -DANDROID -D_LARGEFILE_SOURCE=1 -g -Wno-error=implicit-function-declaration")
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -flto=full")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -flto=full")
@@ -55,7 +55,7 @@ set_target_properties(tde2e PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}
 add_library(tdutils STATIC IMPORTED)
 set_target_properties(tdutils PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtdutils.a)
 
-#tgnet
+# tgnet
 add_library(tgnet STATIC
         tgnet/ApiScheme.cpp
         tgnet/BuffersStorage.cpp
@@ -92,7 +92,7 @@ add_library(tlottie STATIC IMPORTED)
 set_target_properties(tlottie PROPERTIES
         IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/prebuild/${ANDROID_ABI}/libtlottie.a)
 
-#sqlite
+# sqlite
 add_library(sqlite STATIC
         sqlite/sqlite3.c)
 target_compile_options(sqlite PUBLIC
@@ -102,7 +102,7 @@ set_target_properties(sqlite PROPERTIES
 target_compile_definitions(sqlite PUBLIC
         NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE HAVE_STRCHRNUL=0 ANDROID_ARMV6_IDCT)
 
-#breakpad
+# breakpad
 add_library(breakpad STATIC
         third_party/breakpad/src/client/linux/crash_generation/crash_generation_client.cc
         third_party/breakpad/src/client/linux/handler/exception_handler.cc
@@ -132,13 +132,12 @@ target_include_directories(breakpad PUBLIC
         third_party/breakpad/src/common/android/include
         third_party/breakpad/src)
 
-
-#voip
+# voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
 set(NATIVE_LIB "tmessages.49")
 
-#tmessages
+# tmessages
 add_library(${NATIVE_LIB} SHARED
         jni.c
         audio.c
@@ -155,16 +154,22 @@ add_library(${NATIVE_LIB} SHARED
         genann.c
         secureid_ocr.cpp
         tde2e/bridge.cpp
+        # MYgram: QuickJS C-Engine & JNI Bridge
+        quickjs/quickjs.c
+        quickjs/cutils.c
+        quickjs/dtoa.c
+        quickjs/libregexp.c
+        quickjs/libunicode.c
+        quickjs_bridge.cpp
 )
 
 target_compile_options(${NATIVE_LIB} PUBLIC
         -ffast-math -Oz -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)
 
 target_compile_definitions(${NATIVE_LIB} PUBLIC
-        BSD=1 NULL=0 SOCKLEN_T=socklen_t ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE __STDC_CONSTANT_MACROS ANDROID_ARMV6_IDCT OPUS_BUILD FIXED_POINT USE_ALLOCA restrict= __EMX__ LOCALE_NOT_USED HAVE_LRINT HAVE_LRINTF)
+        BSD=1 NULL=0 SOCKLEN_T=socklen_t ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE __STDC_CONSTANT_MACROS ANDROID_ARMV6_IDCT OPUS_BUILD FIXED_POINT USE_ALLOCA restrict= __EMX__ LOCALE_NOT_USED HAVE_LRINT HAVE_LRINTF CONFIG_VERSION=\"MYgram\")
 
 target_sources(${NATIVE_LIB} PRIVATE
-
         third_party/xiph/opusfile/src/info.c
         third_party/xiph/opusfile/src/internal.c
         third_party/xiph/opusfile/src/opusfile.c
@@ -190,6 +195,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         tgcalls/
         webrtc/
         tde2e/include
+        quickjs
 )
 
 target_link_options(${NATIVE_LIB} PRIVATE "-Wl,-z,max-page-size=16384")
@@ -225,12 +231,6 @@ target_link_libraries(${NATIVE_LIB}
         OpenSLES
         cpufeatures
         breakpad)
-
-#if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
-#    target_link_libraries(${NATIVE_LIB}
-#            -Wl,--whole-archive vpxasm -Wl,--no-whole-archive
-#            c)
-#endif()
 
 include(AndroidNdkModules)
 android_ndk_import_module_cpufeatures()

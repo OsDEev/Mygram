@@ -4324,6 +4324,31 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             caption = "";
         }
 
+        if (message != null && org.telegram.messenger.MYgramConfig.isPluginsEnabled()) {
+            String filtered = org.telegram.messenger.plugins.PluginManager.getInstance().triggerMessageHook(message, peer, true);
+            if (filtered == null) {
+                return;
+            }
+            message = filtered;
+        }
+
+        if (org.telegram.messenger.MYgramConfig.isUrlSanitizer()) {
+            if (message != null) {
+                message = org.telegram.messenger.UrlSanitizer.sanitizeText(message);
+            }
+            if (caption != null) {
+                caption = org.telegram.messenger.UrlSanitizer.sanitizeText(caption);
+            }
+        }
+
+        if (message != null && org.telegram.messenger.MYgramConfig.isPluginsEnabled()) {
+            String prepared = org.telegram.messenger.plugins.PluginManager.getInstance().triggerOutgoingPrepared(message, peer);
+            if (prepared == null) {
+                return;
+            }
+            message = prepared;
+        }
+
         long _payStars = getMessagesController().getSendPaidMessagesStars(peer);
         if (_payStars <= 0) {
             _payStars = DialogObject.getMessagesStarsPrice(getMessagesController().isUserContactBlocked(peer));

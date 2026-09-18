@@ -65,4 +65,6 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+
+    <item name="plugin_icon_view" type="id"/>
 </resources>

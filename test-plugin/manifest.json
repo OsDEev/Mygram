@@ -1,0 +1,18 @@
+{
+  "id": "test_all_permissions",
+  "name": "Test All Permissions",
+  "version": "1.0.0",
+  "author": "MYgram",
+  "description": "Test plugin that requests every MYgram permission and exercises every hook",
+  "icon": "icon.png",
+  "entry": "index.js",
+  "permissions": [
+    "MODIFY_OUTGOING_MESSAGES",
+    "READ_MESSAGES",
+    "LIFECYCLE"
+  ],
+  "locales": [
+    "ru",
+    "en"
+  ]
+}

@@ -322,6 +322,12 @@ public class ApplicationLoader extends Application {
             applicationContext = getApplicationContext();
         }
 
+        try {
+            org.telegram.messenger.plugins.PluginManager.getInstance().init(applicationContext);
+        } catch (Throwable ignore) {
+
+        }
+
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
 
         try {

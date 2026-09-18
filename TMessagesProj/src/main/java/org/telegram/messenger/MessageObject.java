@@ -1935,6 +1935,9 @@ public class MessageObject {
         }
 
         updateMessageText(users, chats, sUsers, sChats);
+        if (MYgramConfig.matchesChannelFilter(messageText) && !message.out && message.peer_id != null && message.peer_id.channel_id != 0) {
+            messageText = LocaleController.getString(R.string.MYgramChannelFilterMask);
+        }
         setType();
         if (generateLayout) {
             updateTranslation(false);
